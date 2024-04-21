@@ -1,4 +1,6 @@
+<%= javascript_include_tag 'locations'%>
 <%= stylesheet_link_tag 'styles.css' %>
+<%= include_gon %>
 <h1>Locations#index</h1>
 <!doctype html>
 <html lang="en">
@@ -21,6 +23,23 @@
         zoom: 17
     });
     };
+
+    const createMarker = ({ map, position, icon, opacity, timer  }) => {
+        let thisMarker = new google.maps.Marker({ map, position, icon: icon.link, opacity });
+        if (timer) {
+          setTimeout(function(){timerFunc(thisMarker,icon.animal)}, timer);
+        }
+        return thisMarker
+        };
+
+        function timerFunc(marker,animal) {
+          if (animal === "bear") {
+            marker.setIcon("<%= asset_path 'yellow-bear.png' %>");
+          } else if(animal === "deer"){
+            marker.setIcon("<%= asset_path 'yellow-deer.png' %>");
+          };
+        };
+
 
     const trackLocation = ({ onSuccess, onError = () => { } }) => {
         if ('geolocation' in navigator === false) {
@@ -46,13 +65,51 @@
         default:
         return null;
     }
-    }
+    };
+
+    const findCoordinates = ( coordinates ) => {
+        return { lat: parseFloat(coordinates.split(",")[0]), lng: parseFloat(coordinates.split(",")[1]) }
+        };
+        
+        const findIcon = ( animal, time ) => {
+          switch (animal) {
+            case "bear":
+              if (time<3600000) {
+                return "<%= asset_path 'green-bear.png' %>";
+              } else if (3600000<time<86400000){
+                return "<%= asset_path 'yellow-bear.png' %>";
+              }else{
+                return "<%= asset_path 'red-bear.png' %>";
+              };
+            case "deer":
+              if (time<3600000) {
+                return "<%= asset_path 'green-deer.png' %>";
+              } else if (3600000<time<86400000){
+                return "<%= asset_path 'yellow-deer.png' %>";
+              }else{
+                return "<%= asset_path 'red-deer.png' %>";
+              };
+          };
+        };
 
     function init() {
     const initialPosition = { lat: 59.325, lng: 18.069 };
     const map = createMap(initialPosition);
     const marker = new google.maps.Marker({ map, position: initialPosition });
     const $info = document.getElementById('info');
+
+    gon.locations.forEach(loc => {
+          let thisPosition = findCoordinates(loc.coordinates);
+          let thisTime = Date.now()-Date.parse(loc.created_at)
+          let thisIcon = findIcon(loc.animal,thisTime);
+          let timer;
+          if (thisTime<3600000) {
+            timer = 3600000-thisTime;
+          };
+
+          createMarker({ map, position: thisPosition, icon: {animal: loc.animal, link: thisIcon}, opacity: loc.confirmation/100, timer });
+        });
+
 
     trackLocation({
         onSuccess: ({ coords: { latitude: lat, longitude: lng } }) => {
