@@ -1,2 +1,79 @@
+<%= stylesheet_link_tag 'styles.css' %>
 <h1>Locations#index</h1>
-<p>Find me in app/views/locations/index.html.erb</p>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  </head>
+  <body>
+  <main class="container">
+    <div id="map" class="map"></div>
+    
+    <div id="info" class="info"></div>
+
+    <script>
+    const createMap = ({ lat, lng }) => {
+    return new google.maps.Map(document.getElementById('map'), {
+        center: { lat, lng },
+        scaleControl: true,
+        zoom: 17
+    });
+    };
+
+    const trackLocation = ({ onSuccess, onError = () => { } }) => {
+        if ('geolocation' in navigator === false) {
+            return navigator.geolocation.watchPosition(onSuccess, onError, {
+                enableHighAccuracy: true,
+                timeout: 5000,
+                maximumAge: 0
+                });
+        }
+        
+        
+        return navigator.geolocation.watchPosition(onSuccess, onError);
+        };
+    
+    const getPositionErrorMessage = code => {
+    switch (code) {
+        case 1:
+        return 'Permission denied.';
+        case 2:
+        return 'Position unavailable.';
+        case 3:
+        return 'Timeout reached.';
+        default:
+        return null;
+    }
+    }
+
+    function init() {
+    const initialPosition = { lat: 59.325, lng: 18.069 };
+    const map = createMap(initialPosition);
+    const marker = new google.maps.Marker({ map, position: initialPosition });
+    const $info = document.getElementById('info');
+
+    trackLocation({
+        onSuccess: ({ coords: { latitude: lat, longitude: lng } }) => {
+            marker.setPosition({ lat, lng });
+            map.panTo({ lat, lng });
+            $info.textContent = `Lat: ${lat} Lng: ${lng}`;
+            
+            $info.classList.remove('error');
+        },
+        onError: err => {
+            
+            $info.textContent = `Error: ${getPositionErrorMessage(err.code) || err.message}`;
+            
+            $info.classList.add('error');
+            }
+    });
+    } 
+    </script>
+    </div>
+    </main>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=API_KEY
+    &callback=init"></script>
+</body>
+</html>
